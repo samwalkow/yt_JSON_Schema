@@ -1,0 +1,7 @@
+{
+  "$schema": "./Schema_V1.json",
+  "filename": "somefile",
+  "DomainContext": "Astro"
+
+}
+

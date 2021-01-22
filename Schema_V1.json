@@ -1,0 +1,23 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "http://json-schema.org/draft-07/schema#",
+  "title": "Analysis Schema Objects",
+  "description": "An Object that can loaded into the Analysis Schema",
+  "type": "object",
+  "properties": {
+    "filepath": {
+      "description": "the file name and path to the file",
+      "type": "string"
+    },
+    "filename": {
+        "description": "what to call this file",
+        "type:": "string"
+    },
+    "DomainContext": {
+        "description": "natural science domain to work in",
+        "type": "string"
+    }
+  },
+  "required": [ "filepath", "filename", "DomainContext"]
+}
+
