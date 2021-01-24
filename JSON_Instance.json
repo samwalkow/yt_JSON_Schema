@@ -1,7 +1,7 @@
 {
   "$schema": "./Schema_V1.json",
-  "filename": "somefile",
-  "DomainContext": "Astro"
-
+  "DataSet": {"filename": "text"},
+  "DomainContext": "Astro",
+  "Visualization": {"SlicePlot": {"fields": ["density", "temperature"]}}
 }
 

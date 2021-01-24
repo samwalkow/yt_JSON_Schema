@@ -5,19 +5,42 @@
   "description": "An Object that can loaded into the Analysis Schema",
   "type": "object",
   "properties": {
-    "filepath": {
-      "description": "the file name and path to the file",
-      "type": "string"
-    },
-    "filename": {
-        "description": "what to call this file",
-        "type:": "string"
-    },
-    "DomainContext": {
+     "DomainContext": {
         "description": "natural science domain to work in",
         "type": "string"
+    },
+    "DataSet": {
+        "description": "the data file to load",
+        "type:": "object",
+        "properties": {
+             "filename": {
+                "description": "the file name and path to the file",
+                "type": "string"
+          }
+        },
+        "required": ["filename"]
+    },
+    "Visualization": {
+      "description": "an object to visualize the data",
+      "type": "object",
+      "properties": {
+        "SlicePlot":{
+            "description": "vizualize a slice of data",
+            "type": "object",
+            "properties": {
+              "fields": {
+                "description": "fields to visualize",
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "minItems": 1
+              }
+            } 
+        }
+      }
     }
   },
-  "required": [ "filepath", "filename", "DomainContext"]
+  "required": ["DomainContext"]
 }
 
