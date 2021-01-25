@@ -1,15 +1,11 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "http://json-schema.org/draft-07/schema#",
+  "$id": "#/definitions/root",
   "title": "Analysis Schema Objects",
-  "description": "An Object that can loaded into the Analysis Schema",
+  "description": "yt Analysis Schema for Descriptive Scientific Analysis",
   "type": "object",
-  "properties": {
-     "DomainContext": {
-        "description": "natural science domain to work in",
-        "type": "string"
-    },
-    "DataSet": {
+  "definitions": {
+      "DataSet": {
         "description": "the data file to load",
         "type:": "object",
         "properties": {
@@ -20,25 +16,26 @@
         },
         "required": ["filename"]
     },
+    "PlotTypes": {
+      "enum": [
+        "SlicePlot", "PhasePlot", "ProjeciontPlot"
+      ]
+    }
+  },
+  "properties": {
+     "DomainContext": {
+        "description": "natural science domain to work in",
+        "type": "string",
+        "enum": [
+          "Astrophysics", "Geophysics", "Weather/Climate", "NeuroImaging", "Ocean"
+        ]
+    },
+   
     "Visualization": {
       "description": "an object to visualize the data",
-      "type": "object",
-      "properties": {
-        "SlicePlot":{
-            "description": "vizualize a slice of data",
-            "type": "object",
-            "properties": {
-              "fields": {
-                "description": "fields to visualize",
-                "type": "array",
-                "items": {
-                  "type": "string"
-                },
-                "minItems": 1
-              }
-            } 
+      "items": {
+        "$ref": "#/defintions/PlotTypes"
         }
-      }
     }
   },
   "required": ["DomainContext"]
