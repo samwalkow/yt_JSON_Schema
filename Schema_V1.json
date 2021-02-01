@@ -16,12 +16,42 @@
         },
         "required": ["filename"]
     },
-    "PlotTypes": {
-      "enum": [
-        "SlicePlot", "PhasePlot", "ProjeciontPlot"
-      ]
-    }
-  },
+    "SlicePlot": {
+      "description": "A slice plot!",
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "array",
+          "items": {
+          "$ref": "#/definitions/DataSet"}
+          },
+        "fields": {
+          "description": "which fields do you want to add",
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          }
+            },
+          "weighted_field": {
+            "type": "string"
+          },
+          "axes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "center": {
+            "type":"string"
+            },
+          "widths": {
+            "type": "string"
+          }
+          }
+        }
+      },
+
   "properties": {
      "DomainContext": {
         "description": "natural science domain to work in",
@@ -33,10 +63,16 @@
    
     "Visualization": {
       "description": "an object to visualize the data",
-      "items": {
-        "$ref": "#/defintions/PlotTypes"
+      "type": "object",
+      "properties": {
+        "plot": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/SlicePlot"
+            }
+         }
         }
-    }
+      }
   },
   "required": ["DomainContext"]
 }

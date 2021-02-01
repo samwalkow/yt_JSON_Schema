@@ -1,6 +1,7 @@
 {
   "$schema": "./Schema_V1.json",
-  "DomainContext": "Astrophysics",
-  "Visualization": "SlicePlot"
-}
+  "DomainContext": "Ocean",
+  "Visualization": {}
+  }
+
 
