@@ -1,7 +1,15 @@
 {
   "$schema": "./Schema_V1.json",
-  "DomainContext": "Ocean",
-  "Visualization": {}
+  "DomainContext": "Astrophysics",
+  "Visualization": {
+    "plot": {
+      "axes": ["z"], 
+      "data": {"filename": ""},
+      "fields": ["density", "temperature"],
+      "comments": "This is a slice plot",
+      "center": ""
+      }
+    }
   }
 
 

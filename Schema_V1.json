@@ -5,6 +5,10 @@
   "description": "yt Analysis Schema for Descriptive Scientific Analysis",
   "type": "object",
   "definitions": {
+      "Comments": {
+        "description": "a comment section for work",
+        "type": "string"
+      },
       "DataSet": {
         "description": "the data file to load",
         "type:": "object",
@@ -16,15 +20,11 @@
         },
         "required": ["filename"]
     },
-    "SlicePlot": {
-      "description": "A slice plot!",
+    "Plot": {
+      "description": "A plot!",
       "type": "object",
       "properties": {
-        "data": {
-          "type": "array",
-          "items": {
-          "$ref": "#/definitions/DataSet"}
-          },
+        "data": {"$ref": "#/definitions/DataSet"},
         "fields": {
           "description": "which fields do you want to add",
           "type": "array",
@@ -47,10 +47,12 @@
             },
           "widths": {
             "type": "string"
+          },
+          "comments": {"$ref": "#/definitions/Dataset"}
+          },
+          "required": ["data", "axes", "fields"]
           }
-          }
-        }
-      },
+        },
 
   "properties": {
      "DomainContext": {
@@ -65,14 +67,9 @@
       "description": "an object to visualize the data",
       "type": "object",
       "properties": {
-        "plot": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/SlicePlot"
-            }
+        "plot": {"$ref": "#/definitions/Plot"}
          }
         }
-      }
   },
   "required": ["DomainContext"]
 }
