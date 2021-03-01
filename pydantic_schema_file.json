@@ -1,0 +1,289 @@
+{
+  "title": "yt example",
+  "description": "An example for a yt analysis schema using Pydantic",
+  "type": "object",
+  "properties": {
+    "Plot": {
+      "title": "Plot",
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/SlicePlot"
+      }
+    }
+  },
+  "required": [
+    "Plot"
+  ],
+  "definitions": {
+    "Dataset": {
+      "title": "Dataset",
+      "type": "object",
+      "properties": {
+        "output_id": {
+          "title": "Output Id",
+          "default": "00c882a5-b295-43fe-b5dd-ce31fd50059b",
+          "type": "string",
+          "format": "uuid"
+        },
+        "filename": {
+          "title": "Filename",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "default": "Data for Science",
+          "type": "string"
+        },
+        "comments": {
+          "title": "Comments",
+          "type": "string"
+        },
+        "grammar": {
+          "title": "Grammar",
+          "default": "registration",
+          "type": "string"
+        }
+      },
+      "required": [
+        "filename"
+      ]
+    },
+    "Fields": {
+      "title": "Fields",
+      "type": "object",
+      "properties": {
+        "output_id": {
+          "title": "Output Id",
+          "default": "6a2567dd-71ee-4d8d-91b6-071a12a475fb",
+          "type": "string",
+          "format": "uuid"
+        },
+        "field": {
+          "title": "Field",
+          "type": "string"
+        },
+        "unit": {
+          "title": "Unit",
+          "type": "string"
+        },
+        "comments": {
+          "title": "Comments",
+          "type": "string"
+        },
+        "grammar": {
+          "title": "Grammar",
+          "default": "selection",
+          "type": "string"
+        }
+      },
+      "required": [
+        "field",
+        "unit"
+      ]
+    },
+    "Sum": {
+      "title": "Sum",
+      "type": "object",
+      "properties": {
+        "output_id": {
+          "title": "Output Id",
+          "default": "44a02136-6d95-4eca-b510-0e241180c3d4",
+          "type": "string",
+          "format": "uuid"
+        },
+        "sum_field": {
+          "$ref": "#/definitions/Fields"
+        },
+        "comments": {
+          "title": "Comments",
+          "type": "string"
+        },
+        "grammar": {
+          "title": "Grammar",
+          "default": "reduction",
+          "type": "string"
+        }
+      },
+      "required": [
+        "sum_field"
+      ]
+    },
+    "Average": {
+      "title": "Average",
+      "type": "object",
+      "properties": {
+        "output_id": {
+          "title": "Output Id",
+          "default": "30267798-73d5-4038-814e-31e5478bb37c",
+          "type": "string",
+          "format": "uuid"
+        },
+        "average_field": {
+          "$ref": "#/definitions/Fields"
+        },
+        "comments": {
+          "title": "Comments",
+          "type": "string"
+        },
+        "grammar": {
+          "title": "Grammar",
+          "default": "reduction",
+          "type": "string"
+        }
+      },
+      "required": [
+        "average_field"
+      ]
+    },
+    "Operations": {
+      "title": "Operations",
+      "type": "object",
+      "properties": {
+        "operation": {
+          "title": "Operation",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Sum"
+            },
+            {
+              "$ref": "#/definitions/Average"
+            }
+          ]
+        }
+      },
+      "required": [
+        "operation"
+      ]
+    },
+    "AxisPlot": {
+      "title": "AxisPlot",
+      "type": "object",
+      "properties": {
+        "output_id": {
+          "title": "Output Id",
+          "default": "28d6fc43-b18b-4e3b-bf65-25e1418042c6",
+          "type": "string",
+          "format": "uuid"
+        },
+        "axis": {
+          "title": "Axis",
+          "type": "string"
+        },
+        "comments": {
+          "title": "Comments",
+          "type": "string"
+        }
+      },
+      "required": [
+        "axis"
+      ]
+    },
+    "Center": {
+      "title": "Center",
+      "type": "object",
+      "properties": {
+        "output_id": {
+          "title": "Output Id",
+          "default": "b669fa4c-ad24-4c6e-b008-6c2ea1b41678",
+          "type": "string",
+          "format": "uuid"
+        },
+        "center": {
+          "title": "Center",
+          "type": "string"
+        },
+        "comments": {
+          "title": "Comments",
+          "type": "string"
+        }
+      },
+      "required": [
+        "center"
+      ]
+    },
+    "Widths": {
+      "title": "Widths",
+      "type": "object",
+      "properties": {
+        "output_id": {
+          "title": "Output Id",
+          "default": "cac15294-68d1-4a75-a6a2-77ab557eb516",
+          "type": "string",
+          "format": "uuid"
+        },
+        "width": {
+          "title": "Width",
+          "type": "string"
+        },
+        "comments": {
+          "title": "Comments",
+          "type": "string"
+        }
+      },
+      "required": [
+        "width"
+      ]
+    },
+    "SlicePlot": {
+      "title": "SlicePlot",
+      "type": "object",
+      "properties": {
+        "output_id": {
+          "title": "Output Id",
+          "default": "87b17a05-181e-4bad-849a-2cab9257191e",
+          "type": "string",
+          "format": "uuid"
+        },
+        "Data": {
+          "$ref": "#/definitions/Dataset"
+        },
+        "PlotFields": {
+          "title": "Plotfields",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Operations"
+            },
+            {
+              "$ref": "#/definitions/Fields"
+            }
+          ]
+        },
+        "AxisPlot": {
+          "title": "Axisplot",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/AxisPlot"
+          }
+        },
+        "CenterPlot": {
+          "$ref": "#/definitions/Center"
+        },
+        "WidthPlot": {
+          "title": "Widthplot",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Widths"
+          }
+        },
+        "Comments": {
+          "title": "Comments",
+          "type": "string"
+        },
+        "Annotation": {
+          "title": "Annotation",
+          "default": false,
+          "type": "boolean"
+        },
+        "ColorMap": {
+          "title": "Colormap",
+          "type": "string"
+        }
+      },
+      "required": [
+        "Data",
+        "PlotFields",
+        "AxisPlot"
+      ]
+    }
+  }
+}

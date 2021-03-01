@@ -1,0 +1,32 @@
+{
+  "$schema": "./pydantic_schema_file.json",
+  "Plot": [
+    {
+      "Data": {
+        "filename": "Sam.txt", "comments": "My data is here"
+      },
+      "PlotFields":{
+        "operation":{
+          "sum_field": {
+            "field": "density",
+            "unit": "kpc"
+          }
+        }
+      },
+      "AxisPlot": [
+        {
+        "axis": "x"
+        }
+      ],
+      "CenterPlot": {
+        "center": "z"
+      },
+      "WidthPlot": [
+        {
+          "width": "1"
+          }
+        ],
+      "Annotation": true
+  }
+]
+}
