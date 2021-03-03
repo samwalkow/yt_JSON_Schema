@@ -7,16 +7,28 @@ from pydantic.main import create_model
 from uuid import UUID, uuid4
 from dataclasses import dataclass
 
+# TO DO: 
+# domain contexts - add class and add conditional logic. What classes, attributes, and methods should be subject to domain flexibility?
+# start a spreadsheet / google doc to track this?
+# ontologies? - add? pull from? 
+# what are essential yt methods and attributes that need to be a part of each data class?
+# - what of these attributes should the user not see (be set to private in pydantic)
+# - What of these attributes should the user see/customize?
+
+
 class Dataset(BaseModel):
+    """ 
+    The dataset model to load and that will be drawn from for other classes. Filename is the only required field. 
+    """
     output_id: UUID = uuid4()
-    filename: str = ...
+    filename: str
     name: str = "Data for Science"
     comments: Optional[str] 
     grammar: str = "registration"
 
 class Fields(BaseModel):
     output_id: UUID = uuid4()
-    field: str = ...
+    field: str
     # unit - domain specific
     unit: str
     comments: Optional[str]
