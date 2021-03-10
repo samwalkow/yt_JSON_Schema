@@ -1,3 +1,4 @@
+from enum import Enum
 from pathlib import Path
 from enum import Enum
 from pydantic import BaseModel, Field, constr
@@ -7,6 +8,8 @@ from pydantic.main import create_model
 from uuid import UUID, uuid4
 from dataclasses import dataclass
 
+#from pydantic.types import ModelOrDc
+
 # TO DO: 
 # domain contexts - add class and add conditional logic. What classes, attributes, and methods should be subject to domain flexibility?
 # start a spreadsheet / google doc to track this?
@@ -14,7 +17,13 @@ from dataclasses import dataclass
 # what are essential yt methods and attributes that need to be a part of each data class?
 # - what of these attributes should the user not see (be set to private in pydantic)
 # - What of these attributes should the user see/customize?
+# - what of these atrributes are astro-specific? is there anything that is essential and astro-specific?
 
+# for data ouptut - what in yt holds the data? What is data in yt? What should the schema refer to - create a mini-model to hold data output. Have user name that output, like a variable name? Have an id assigned to it?
+
+@dataclass
+class InputOutputMapping:
+    combo1: Dict[str, List[str, str, str]] = {'registration': ['selection', 'reduction', 'transformation']}
 
 class Dataset(BaseModel):
     """ 
@@ -68,9 +77,16 @@ class _PlotAttributes(BaseModel):
     # necessary and private plotting functions for all plots
     PlottingWindow: str = "1.0"
 
+class DataOutput(BaseModel):
+    data_output: bool = False
+    output_format: str = None
+
+class DataSource(BaseModel):
+    data_selection: Union[DataOutput, Dataset, Operations]
+
 class SlicePlot(BaseModel):
     output_id: UUID = uuid4()
-    Data: Dataset
+    Data: DataSource
     PlotFields: Union[Operations, Fields]
     AxisPlot: List[AxisPlot]
     CenterPlot: Optional[Center]
@@ -79,7 +95,9 @@ class SlicePlot(BaseModel):
     Annotation : bool = False
     # color map - domain specific
     ColorMap: str = None
+    Data_Out: Optional[DataOutput]
     _PlotFunctions: _PlotAttributes
+
 
 class ytModel(BaseModel):
     '''
@@ -95,7 +113,7 @@ class ytModel(BaseModel):
 # file_path = Path("Data.json")
 # print(file_path)
 
-test = ytModel(Plot = [{"Data": {"filename": "Sam.txt"}, "PlotFields": {"field": "density", "unit": "kpc"}, "AxisPlot": [{"axis": "x"}], "CenterPlot": {"center": "z"}, "WidthPlot": [{"width": "1"}]}])
+test = ytModel(Plot = [{"Data": {"data_selection": {"filename": "Sam.txt"}}, "PlotFields": {"field": "density", "unit": "kpc"}, "AxisPlot": [{"axis": "x"}], "CenterPlot": {"center": "z"}, "WidthPlot": [{"width": "1"}], "Data_Out": {"data_output": True}}])
 
 print("Instance Example:")
 print(test.json(indent=2))
@@ -104,9 +122,12 @@ print("Schema Example:")
 print(test.schema_json(indent=2))
 print()
 
-# yt_dynamic = create_model("Dynamic_yt_model", dataset=(str, "file.txt"), FieldList = (list, ["density", "temperature"]), axis=(str, "x"))
 
-# #print(yt_dynamic.schema_json(indent=2))
+# yt_dynamic = create_model("Dynamic_yt_model", dataset=(str, "file.txt"), 
+#     FieldList = (list, ["density", "temperature"]), axis=(str, "x"))
+
+# print(yt_dynamic.schema_json(indent=2))
+
 
 # # print(dir(pydantic))
 # # print(help(pydantic))
