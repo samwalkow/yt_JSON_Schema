@@ -31,14 +31,12 @@ class Dataset(BaseModel):
     """ 
     The dataset model to load and that will be drawn from for other classes. Filename is the only required field. 
     """
-    output_id: UUID = uuid4()
     filename: str
     name: str = "Data for Science"
     comments: Optional[str] 
     grammar: str = "registration"
 
 class Fields(BaseModel):
-    output_id: UUID = uuid4()
     field: str
     # unit - domain specific
     unit: str
@@ -46,17 +44,14 @@ class Fields(BaseModel):
     grammar: str = "selection"
 
 class AxisPlot(BaseModel):
-    output_id: UUID = uuid4()
     axis: str
     comments: Optional[str]
 
 class Center(BaseModel):
-    output_id: UUID = uuid4()
     center: str
     comments: Optional[str]
 
 class Widths(BaseModel):
-    output_id: UUID = uuid4()
     width: str
     comments: Optional[str]
 
@@ -69,13 +64,11 @@ class Scale(BaseModel):
     scale: str = "log"
 
 class Average(BaseModel):
-    output_id: UUID = uuid4()
     average_field: Fields
     comments: Optional[str]
     grammar: str = "reduction"
 
 class Sum(BaseModel):
-    output_id: UUID = uuid4()
     sum_field: Fields
     comments: Optional[str]
     grammar: str = "reduction"
@@ -87,18 +80,12 @@ class _PlotAttributes(BaseModel):
     # necessary and private plotting functions for all plots
     PlottingWindow: str = "1.0"
 
-class DataOutput(BaseModel):
-    data_output: bool = False
-    output_format: str = None
-
 class DataSource(BaseModel):
     dataset: Dataset
     data_selection: Union[Fields, Operations]
 
 class SlicePlot(BaseModel):
-    output_id: UUID = uuid4()
     Data: DataSource
-    #PlotFields: Union[Operations, Fields]
     AxisPlot: Optional[List[AxisPlot]]
     CenterPlot: Optional[Center]
     WidthPlot: Optional[List[Widths]]
@@ -106,7 +93,6 @@ class SlicePlot(BaseModel):
     Annotation : bool = False
     # color map - domain specific
     ColorMap: str = None
-    Data_Out: Optional[DataOutput]
     _PlotFunctions: _PlotAttributes
 
 
@@ -115,7 +101,6 @@ class ytModel(BaseModel):
     An example for a yt analysis schema using Pydantic
     '''
     Plot: List[SlicePlot]
-    #Analysis: [List[Operations]
 
     class Config:
         title = 'yt example'
