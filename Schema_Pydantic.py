@@ -1,3 +1,5 @@
+#%%
+
 from enum import Enum
 from pydantic import BaseModel, Field, constr
 from typing import Generic, List, Union, Dict, Optional
@@ -5,7 +7,6 @@ import pydantic
 from pydantic.main import create_model
 from inspect import getfullargspec
 import yt
-
 
 class ytBaseModel(BaseModel):
     _arg_mapping: dict = {}  # mapping from internal yt name to schema name
@@ -17,6 +18,7 @@ class ytBaseModel(BaseModel):
         # first make sure yt is imported and then get our function handle. This assumes
         # that our class name exists in yt's top level api.
         import yt
+        print(yt.__version__)
         print(self._yt_operation)
 
         funcname = getattr(self, "_yt_operation", type(self).__name__)
@@ -49,6 +51,8 @@ class ytBaseModel(BaseModel):
         # this is recursive! will call _run() if a given argument value is also a ytBaseModel.
         for arg_i, arg in enumerate(func_spec.args):
             # check if we've remapped the yt internal argument name for the schema
+            if arg == 'self':
+                continue
             if arg in self._arg_mapping:
                 arg = self._arg_mapping[arg]
 
@@ -79,7 +83,6 @@ class ytBaseModel(BaseModel):
         print(the_args)
         return func(*the_args)
 
-
 class ytParameter(BaseModel):
     _skip_these = ['comments']
 
@@ -87,6 +90,7 @@ class ytParameter(BaseModel):
         p = [getattr(self, key) for key in self.schema()[
             'properties'].keys() if key not in self._skip_these]
         if len(p) > 1:
+            print("some error", p)
             raise ValueError(
                 "whoops. ytParameter instances can only have single values")
         return p[0]
@@ -107,7 +111,8 @@ class Dataset(ytBaseModel):
 class Fields(ytParameter):
     field: str
     # unit - domain specific
-    unit: Optional[str]
+    # getting an error with unit enabled
+    _unit: Optional[str]
     comments: Optional[str]
     _grammar: str = "selection"
 
@@ -163,17 +168,31 @@ class SlicePlot(ytBaseModel):
     #ColorMap: str = None
     #_PlotFunctions: _PlotAttributes
 
-# class ProjectionPlot(ytBaseModel):
-#     Dataset: Dataset
-#     Field: Fields
-#     Axis: str
+class ProjectionPlot(ytBaseModel):
+    Dataset: Dataset
+    Field: Fields
+    Axis: str
+    CenterPlot: Center
+    WidthPlot: Optional[List[Widths]]
+    Comments: Optional[str]
+    _yt_operation: str = "ProjectionPlot"
+    _arg_mapping: dict = {'ds': 'Dataset', 'fields': 'Field',
+                          'axis': 'Axis', 'center': 'CenterPlot', 'width': 'WidthPlot'}
 
+class PhasePlot(ytBaseModel):
+    Dataset: Dataset
+    xField: Fields
+    yField: Fields
+    zField: Union[Fields, List[Fields]]
+    Comments: Optional[str]
+    _yt_operation: str = "PhasePlot"
+    _arg_mapping: dict = {'data_source': 'Dataset', 'x_field': 'xField', ' y_field': 'yField', 'z_fields': 'zField'}
 
 class ytModel(ytBaseModel):
     '''
     An example for a yt analysis schema using Pydantic
     '''
-    Plot: List[SlicePlot]
+    Plot: List[ProjectionPlot]
     #Load: Dataset
 
     class Config:
@@ -185,23 +204,34 @@ class ytModel(ytBaseModel):
         att = getattr(self, "Plot")
         return [p._run() for p in att]
 
-just_json = {"Plot": [{"Dataset": {
+json_slice = {"Plot": [{"Dataset": {
     "filename": "IsolatedGalaxy/galaxy0030/galaxy0030"},
     "Field": {"field": "density"},
     "Axis": "x"}]}
 
-analysis_model = ytModel(Plot=just_json["Plot"])
+json_projection = {"Plot": [{"Dataset": {
+    "filename": "IsolatedGalaxy/galaxy0030/galaxy0030"},
+    "Field": {"field": "temperature"},
+    "Axis": "x",
+    "CenterPlot": {"center": "c"}}]}
+
+json_phase = {"Plot": [{"Dataset": {
+    "filename": "IsolatedGalaxy/galaxy0030/galaxy0030"},
+    "xField": {"field": "density"},
+    "yField": {"field" :"density"},
+    "zField": {"field": "velocity"}}]}
+
+analysis_model = ytModel(Plot=json_projection["Plot"])
 print(analysis_model)
 
-print("Instance Example:")
-print(analysis_model.json(indent=2))
-print()
-print("Schema Example:")
-print(analysis_model.schema_json(indent=2))
-print()
+# print("Instance Example:")
+# print(analysis_model.json(indent=2))
+# print()
+# print("Schema Example:")
+# print(analysis_model.schema_json(indent=2))
+# print()
 result = analysis_model._run()
-
-#ds = yt.load("enzo_tiny_cosmology/DD0046/DD0046")
+result[0].show()
 
 # yt_dynamic = create_model("Dynamic_yt_model", dataset=(str, "file.txt"),
 #     FieldList = (list, ["density", "temperature"]), axis=(str, "x"))
@@ -210,3 +240,9 @@ result = analysis_model._run()
 
 # with open("pydantic_schema_file.json", "w") as file:
 #     file.write(analysis_model.schema_json(indent=2))
+
+
+# %%
+import yt
+yt.PhasePlot?
+# %%
