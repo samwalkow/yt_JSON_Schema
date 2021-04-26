@@ -28,6 +28,7 @@ class ytBaseModel(BaseModel):
         # ignoring vargs and kw-only args for now...
         # see https://docs.python.org/3/library/inspect.html#inspect.getfullargspec
         func_spec = getfullargspec(func)
+        print("spec", func_spec)
 
         # the list that we'll use to eventually call our function
         the_args = []
@@ -35,6 +36,7 @@ class ytBaseModel(BaseModel):
         # the argument position number at which we have default values (a little hacky, should
         # be a better way to do this, and not sure how to scale it to include *args and **kwargs)
         n_args = len(func_spec.args)  # number of arguments
+        print("number of args:", n_args)
         if func_spec.defaults is None:
             # no default args, make sure we never get there...
             named_kw_start_at = n_args + 1
@@ -161,6 +163,11 @@ class SlicePlot(ytBaseModel):
     #ColorMap: str = None
     #_PlotFunctions: _PlotAttributes
 
+# class ProjectionPlot(ytBaseModel):
+#     Dataset: Dataset
+#     Field: Fields
+#     Axis: str
+
 
 class ytModel(ytBaseModel):
     '''
@@ -184,6 +191,7 @@ just_json = {"Plot": [{"Dataset": {
     "Axis": "x"}]}
 
 analysis_model = ytModel(Plot=just_json["Plot"])
+print(analysis_model)
 
 print("Instance Example:")
 print(analysis_model.json(indent=2))
@@ -191,11 +199,9 @@ print()
 print("Schema Example:")
 print(analysis_model.schema_json(indent=2))
 print()
-p = analysis_model.Plot[0]
-print(p.Field.field)
 result = analysis_model._run()
 
-#ds = yt.load("IsolatedGalaxy/galaxy0030/galaxy0030")
+#ds = yt.load("enzo_tiny_cosmology/DD0046/DD0046")
 
 # yt_dynamic = create_model("Dynamic_yt_model", dataset=(str, "file.txt"),
 #     FieldList = (list, ["density", "temperature"]), axis=(str, "x"))
