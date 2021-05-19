@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field, constr
 from typing import Generic, List, Union, Dict, Optional, Sequence, Tuple
 import pydantic
 from pydantic.main import create_model
-from inspect import getfullargspec
+from inspect import getfullargspec, getmembers
 import yt
 
 
@@ -241,39 +241,28 @@ class ytModel(ytBaseModel):
     class Config:
         title = 'yt example'
         underscore_attrs_are_private = True
-
-    # def _no_operation(self):
-    #     att = getattr(self, "Visualization")
-    #     print(att)
     
     def _run(self):
         # for the top level model, we override this. Nested objects will still be recursive!
+        output_list = list()
         att = getattr(self, "Plot")
         print("full att:", att)
+        print("what is att:", type(att))
         print()
-        x_list = []
-        # for x in att:
-        #     print("an att:", x)
-        #     if hasattr(x, "_yt_operation"):
-        #         print("this is the att:", x)
-        #         run_att = x._run()
-        #         return run_att
-        #         # print("running att:", run_att)
-        #         # x_list.append(run_att)
-        #         # print("the att list:", x_list)
-        #     else:
-        #         continue
-    #    return x_list
+    
         for p in att:
             print("atts:", p)
-            new_att = getattr(p, "SlicePlot")
-            #print("dir:", dir(new_att))
-            print("new att:", new_att)
-            print()
-            
-            return new_att._run()
+            print("atts type:", type(p))
+            print("atts dir:", dir(p))
+            for attribute in dir(p):
+                if attribute.endswith('Plot'):
+                    new_att = getattr(p, attribute)
+                    print("new att:", new_att)
+                    print()
+                    if new_att is not None:
+                        output_list.append(new_att._run())
+            return output_list
 
-        #return [p._run() for p in att]
 
 json_slice = {"Dataset": {
     "filename": "IsolatedGalaxy/galaxy0030/galaxy0030"},
@@ -305,7 +294,13 @@ json_phase = {"Dataset": {
 
 # %%
 
-analysis_model = ytModel(Plot = [{"SlicePlot": json_slice}])
+analysis_model = ytModel(Plot = [
+    {
+        "SlicePlot": json_slice,
+        "ProjectionPlot": json_projection
+        }
+    ]
+)
 #analysis_model = ytModel(Plot= [json_projection, json_slice])
 
 print("the model:", analysis_model)
@@ -321,17 +316,20 @@ print(type(analysis_model))
 
 # %%
 
-# def show_plots(schema):
-#     result = schema._run()
-#     print(result)
-#     for output in range(len(tuple(result))):
-#         print("each output:", result[output])
-#         result[output].show()
+def show_plots(schema):
+    result = schema._run()
+    print(result)
+    for output in range(len(tuple(result))):
+        print("each output:", result[output])
+        result[output].show()
 
-# print(show_plots(analysis_model))
+print(show_plots(analysis_model))
 
-result = analysis_model._run()
-print(result.show())
+
+# result = analysis_model._run()
+# print(result, type(result))
+# print(result[0].show())
+# print(result[1].show())
 
 # %%
 
