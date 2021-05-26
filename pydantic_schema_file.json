@@ -7,7 +7,7 @@
       "title": "Plot",
       "type": "array",
       "items": {
-        "$ref": "#/definitions/SlicePlot"
+        "$ref": "#/definitions/Visualizations"
       }
     }
   },
@@ -20,7 +20,7 @@
       "description": "The dataset model to load and that will be drawn from for other classes. Filename is the only required field. ",
       "type": "object",
       "properties": {
-        "filename": {
+        "FileName": {
           "title": "Filename",
           "type": "string"
         },
@@ -35,19 +35,16 @@
         }
       },
       "required": [
-        "filename"
+        "FileName"
       ]
     },
-    "Fields": {
-      "title": "Fields",
+    "FieldNames": {
+      "title": "FieldNames",
+      "description": "Specify a field name and optionally, a unit",
       "type": "object",
       "properties": {
         "field": {
           "title": "Field",
-          "type": "string"
-        },
-        "unit": {
-          "title": "Unit",
           "type": "string"
         },
         "comments": {
@@ -59,63 +56,61 @@
         "field"
       ]
     },
-    "Center": {
-      "title": "Center",
-      "type": "object",
-      "properties": {
-        "center": {
-          "title": "Center",
-          "type": "string"
-        },
-        "comments": {
-          "title": "Comments",
-          "type": "string"
-        }
-      },
-      "required": [
-        "center"
-      ]
-    },
-    "Widths": {
-      "title": "Widths",
-      "type": "object",
-      "properties": {
-        "width": {
-          "title": "Width",
-          "type": "string"
-        },
-        "comments": {
-          "title": "Comments",
-          "type": "string"
-        }
-      },
-      "required": [
-        "width"
-      ]
-    },
     "SlicePlot": {
       "title": "SlicePlot",
       "type": "object",
       "properties": {
         "Dataset": {
-          "$ref": "#/definitions/Dataset"
+          "title": "Dataset",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Dataset"
+            },
+            {}
+          ]
         },
-        "Field": {
-          "$ref": "#/definitions/Fields"
+        "fields": {
+          "$ref": "#/definitions/FieldNames"
         },
         "Axis": {
           "title": "Axis",
           "type": "string"
         },
-        "CenterPlot": {
-          "$ref": "#/definitions/Center"
+        "Center": {
+          "title": "Center",
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          ]
         },
-        "WidthPlot": {
-          "title": "Widthplot",
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/Widths"
-          }
+        "width": {
+          "title": "Width",
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            {
+              "type": "array",
+              "items": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "string"
+                }
+              ]
+            }
+          ]
         },
         "Comments": {
           "title": "Comments",
@@ -124,9 +119,205 @@
       },
       "required": [
         "Dataset",
-        "Field",
+        "fields",
         "Axis"
       ]
+    },
+    "ProjectionPlot": {
+      "title": "ProjectionPlot",
+      "type": "object",
+      "properties": {
+        "Dataset": {
+          "title": "Dataset",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Dataset"
+            },
+            {}
+          ]
+        },
+        "fields": {
+          "$ref": "#/definitions/FieldNames"
+        },
+        "Axis": {
+          "title": "Axis",
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "integer"
+            }
+          ]
+        },
+        "Center": {
+          "title": "Center",
+          "type": "string"
+        },
+        "width": {
+          "title": "Width",
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {}
+            },
+            {
+              "type": "number"
+            }
+          ]
+        },
+        "axes_unit": {
+          "title": "Axes Unit",
+          "type": "string"
+        },
+        "weight_field": {
+          "$ref": "#/definitions/FieldNames"
+        },
+        "max_level": {
+          "title": "Max Level",
+          "type": "integer"
+        },
+        "origin": {
+          "title": "Origin",
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          ]
+        },
+        "right_handed": {
+          "title": "Right Handed",
+          "type": "boolean"
+        },
+        "fontsize": {
+          "title": "Fontsize",
+          "type": "integer"
+        },
+        "field_parameters": {
+          "title": "Field Parameters",
+          "type": "object"
+        },
+        "method": {
+          "title": "Method",
+          "type": "string"
+        },
+        "Comments": {
+          "title": "Comments",
+          "type": "string"
+        }
+      },
+      "required": [
+        "Dataset",
+        "fields",
+        "Axis"
+      ]
+    },
+    "PhasePlot": {
+      "title": "PhasePlot",
+      "type": "object",
+      "properties": {
+        "Dataset": {
+          "title": "Dataset",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Dataset"
+            },
+            {}
+          ]
+        },
+        "x_field": {
+          "$ref": "#/definitions/FieldNames"
+        },
+        "y_field": {
+          "$ref": "#/definitions/FieldNames"
+        },
+        "z_fields": {
+          "title": "Z Fields",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/FieldNames"
+            },
+            {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/FieldNames"
+              }
+            }
+          ]
+        },
+        "weight_field": {
+          "$ref": "#/definitions/FieldNames"
+        },
+        "x_bins": {
+          "title": "X Bins",
+          "type": "integer"
+        },
+        "y_bins": {
+          "title": "Y Bins",
+          "type": "integer"
+        },
+        "accumulation": {
+          "title": "Accumulation",
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "boolean"
+              }
+            }
+          ]
+        },
+        "fractional": {
+          "title": "Fractional",
+          "type": "boolean"
+        },
+        "figure_size": {
+          "title": "Figure Size",
+          "type": "integer"
+        },
+        "fontsize": {
+          "title": "Fontsize",
+          "type": "integer"
+        },
+        "shading": {
+          "title": "Shading",
+          "type": "string"
+        },
+        "Comments": {
+          "title": "Comments",
+          "type": "string"
+        }
+      },
+      "required": [
+        "Dataset",
+        "x_field",
+        "y_field",
+        "z_fields"
+      ]
+    },
+    "Visualizations": {
+      "title": "Visualizations",
+      "type": "object",
+      "properties": {
+        "SlicePlot": {
+          "$ref": "#/definitions/SlicePlot"
+        },
+        "ProjectionPlot": {
+          "$ref": "#/definitions/ProjectionPlot"
+        },
+        "PhasePlot": {
+          "$ref": "#/definitions/PhasePlot"
+        }
+      }
     }
   }
 }

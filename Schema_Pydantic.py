@@ -2,16 +2,27 @@
 
 from enum import Enum
 from types import new_class
+from numba.core.decorators import jit
 from numpy import place
 from pydantic import BaseModel, Field, constr
-from typing import Generic, List, Union, Dict, Optional, Sequence, Tuple
+from typing import Generic, List, Union, Dict, Optional, Sequence, Tuple, Any
 import pydantic
 from pydantic.main import create_model
 from inspect import getfullargspec, getmembers
 import yt
+import json
+from numba.experimental import jitclass
 
+# %%
+def show_plots(schema):
+    result = schema._run()
+    print(result)
+    for output in range(len(tuple(result))):
+        print("each output:", result[output])
+        result[output].show()
 
 #%%
+#@jitclass
 class ytBaseModel(BaseModel):
     _arg_mapping: dict = {}  # mapping from internal yt name to schema name
     _yt_operation: Optional[str]
@@ -59,14 +70,19 @@ class ytBaseModel(BaseModel):
             # check if we've remapped the yt internal argument name for the schema
             if arg == 'self':
                 continue
-            if arg in self._arg_mapping:
-                arg = self._arg_mapping[arg]
+            # if arg in self._arg_mapping:
+                # arg = self._arg_mapping[arg]
 
             # get the value for this argument. If it's not there, attempt to set default values
             # for arguments needed for yt but not exposed in our pydantic class
-            print(arg)
+            print("the arguemnt:", arg)
             try:
                 arg_value = getattr(self, arg)
+                print("the arg value:", arg_value)
+                if arg_value == None:
+                    default_index = arg_i - named_kw_start_at
+                    arg_value = func_spec.defaults[default_index]
+                    print('defaults:', default_index, arg_value)
             except AttributeError:
                 if arg_i >= named_kw_start_at:
                     # we are in the named keyword arguments, grab the default
@@ -74,6 +90,7 @@ class ytBaseModel(BaseModel):
                     # argument, so need to offset the arg_i counter
                     default_index = arg_i - named_kw_start_at
                     arg_value = func_spec.defaults[default_index]
+                    print('defaults:', default_index, arg_value)
                 else:
                     raise AttributeError
 
@@ -107,26 +124,30 @@ class Dataset(ytBaseModel):
     """ 
     The dataset model to load and that will be drawn from for other classes. Filename is the only required field. 
     """
-    filename: str
+    fn: str = Field(alias="FileName")
     name: str = "Data for Science"
     comments: Optional[str] 
     _yt_operation: str = "load"
-    _arg_mapping: dict = {'fn' : 'filename'}
+    #_arg_mapping: dict = {'fn' : 'filename'}
     
 
-class Fields(ytParameter):
-    field: str
+class FieldNames(ytParameter):
+    """
+    Specify a field name and optionally, a unit
+    """
+    # can't seeem to alias 'field' - maybe because the pydantic name 'Field' is called to do the alias?
+    field: str 
     # unit - domain specific
     # getting an error with unit enabled
     _unit: Optional[str]
     comments: Optional[str]
 
-class Sphere(ytBaseModel):
-    # found in the 'selection_data_containers.py' 
-    Center: List[float]
-    Radius: Union[float, Tuple[float, str]]
-    _yt_operation: str = "sphere"
-    _arg_mapping: dict = {'center': 'Center', 'radius': 'Radius'}
+# class Sphere(ytBaseModel):
+#     # found in the 'selection_data_containers.py' 
+#     Center: List[float]
+#     Radius: Union[float, Tuple[float, str]]
+#     _yt_operation: str = "sphere"
+#     _arg_mapping: dict = {'center': 'Center', 'radius': 'Radius'}
 
 # class ShadingEnum(ytParameter):
 #     shading: Union[str]
@@ -171,56 +192,69 @@ class Sphere(ytBaseModel):
 # look at the data source and selection, objects
 
 class SlicePlot(ytBaseModel):
-    Dataset: Dataset
-    Field: Fields
-    Axis: str
-    CenterPlot: Optional[str]
-    WidthPlot: Optional[List[str]]
+    ds: Union[Dataset, Any] = Field(alias='Dataset')
+    fields: FieldNames
+    axis: str = Field(alias='Axis')
+    center: Optional[Union[str, List[float]]] = Field(alias='Center')
+    width: Optional[Union[List[str], tuple[int, str]]] = Field(alias='Width')
     Comments: Optional[str]
     _yt_operation: str = "SlicePlot"
-    _arg_mapping: dict = {'ds': 'Dataset', 'fields': 'Field',
-                          'axis': 'Axis', 'center': 'CenterPlot', 'width': 'WidthPlot'}
+    #_arg_mapping: dict = {'ds': 'Dataset', 'fields': 'Field',
+    #                     'axis': 'Axis', 'center': 'CenterPlot', 'width': 'WidthPlot'}
   
 
 class ProjectionPlot(ytBaseModel):
-    Dataset: Dataset
-    Field: Fields
-    Axis: Union[str, int]
+    ds: Union[Dataset, Any] = Field(alias='Dataset')
+    fields: FieldNames
+    axis: Union[str, int] = Field(alias='Axis')
     # domain stuff here. Can we simplify? Contains operations stuff too
-    CenterPlot: Optional[str]
+    center: Optional[str] = Field(alias='Center')
     # more confusing design. Can we simplify? This contain field names, units, and widths
-    WidthPlot: Optional[Union[tuple, float]]
-    WeightedField: Optional[Fields]
-    AxesUnit: str
+    width: Optional[Union[tuple, float]] = Field(alias='Width')
+    axes_unit: Optional[str]
+    weight_field: Optional[FieldNames]
+    max_level: Optional[int]
     # need to sort this design out
     # might need to be a seperate class since we need to limit the length
-    Origin: Optional[Union[str, Sequence]]
+    origin: Optional[Union[str, List[str]]]
+    #right handed? what does this mean?
+    right_handed: Optional[bool]
+    fontsize: Optional[int]
+    # TODO: a dict for dervied fields - can imporve
+    field_parameters: Optional[dict]
+    # better name?
+    method: Optional[str]
     #DataSource: Optional[Sphere]
     Comments: Optional[str]
     _yt_operation: str = "ProjectionPlot"
-    _arg_mapping: dict = {'ds': 'Dataset', 'fields': 'Field',
-                            'axis': 'Axis', 'center': 'CenterPlot',
-                          'weight_field': 'WeightedField', 'axes_unit': 'AxesUnit', 'data_source': 'DataSource'}
+    # #_arg_mapping: dict = {'ds': 'Dataset', 'fields': 'Field',
+    #                         'axis': 'Axis', 'center': 'CenterPlot',
+    #                       'weight_field': 'WeightedField', 'axes_unit': 'AxesUnit', 
+    #                       'max_level': 'MaxLevel',
+    #                       'right_handed': 'RightHanded',
+    #                       'font_size': 'FontSize',
+    #                       'Method': 'method',
+    #                       'data_source': 'DataSource'}
 
 class PhasePlot(ytBaseModel):
-    Dataset: Dataset
-    xField: Fields
-    yField: Fields
-    zField: Union[Fields, List[Fields]]
-    WeightedField: Optional[Fields]
-    xBins: int
-    yBins: int
+    data_source: Union[Dataset, Any] = Field(alias='Dataset')
+    x_field: FieldNames
+    y_field: FieldNames
+    z_fields: Union[FieldNames, List[FieldNames]]
+    weight_field: Optional[FieldNames]
+    x_bins: Optional[int]
+    y_bins: Optional[int]
     # different names and explaintions for accumulation and fractional and shading
-    Accumulation: Union[bool, List[bool]]
-    Fractional: bool
-    FigureSize: int
-    FontSize: int
+    accumulation: Optional[Union[bool, List[bool]]]
+    fractional: Optional[bool]
+    figure_size: Optional[int]
+    fontsize: Optional[int]
     # different name? Maybe should be an enum?
-    Shading: str
+    shading: Optional[str]
     Comments: Optional[str]
     _yt_operation: str = "PhasePlot"
-    _arg_mapping: dict = {'data_source': 'Dataset', 'x_field': 'xField', 'y_field': 'yField', 'z_fields': 'zField', 'weight_field': 'WeightedField', 'x_bins': 'xBins', 'y_bins': 'yBins', 'accumulation': 'Accumulation', 'fractional': 'Fractional', 'figure_size': 'FigureSize', 'fontsize': 'FontSize',
-    'shading': 'Shading'}
+    #_arg_mapping: dict = {'data_source': 'Dataset', 'x_field': 'xField', 'y_field': 'yField', 'z_fields': 'zField', 'weight_field': 'WeightedField', 'x_bins': 'xBins', 'y_bins': 'yBins', 'accumulation': 'Accumulation', 'fractional': 'Fractional', 'figure_size': 'FigureSize', 'fontsize': 'FontSize',
+    #'shading': 'Shading'}
 
 class Visualizations(BaseModel):
     # use pydantic basemodel
@@ -236,6 +270,7 @@ class ytModel(ytBaseModel):
     An example for a yt analysis schema using Pydantic
     '''
     #Plot: List[Union[ProjectionPlot, PhasePlot, SlicePlot]]
+    #Data: Dataset
     Plot: List[Visualizations]
 
     class Config:
@@ -245,63 +280,84 @@ class ytModel(ytBaseModel):
     def _run(self):
         # for the top level model, we override this. Nested objects will still be recursive!
         output_list = list()
+        # data_att = getattr(self, "Data")
+        # data_container = data_att._run()
         att = getattr(self, "Plot")
-        print("full att:", att)
-        print("what is att:", type(att))
-        print()
+        # print("full att:", att)
+        # print("what is att:", type(att))
+        # print()
     
         for p in att:
-            print("atts:", p)
-            print("atts type:", type(p))
-            print("atts dir:", dir(p))
+            # print("atts:", p)
+            # print("atts type:", type(p))
+            # print("atts dir:", dir(p))
             for attribute in dir(p):
                 if attribute.endswith('Plot'):
                     new_att = getattr(p, attribute)
-                    print("new att:", new_att)
-                    print()
+                    #print("new att:", new_att)
+                    #print()
                     if new_att is not None:
                         output_list.append(new_att._run())
             return output_list
 
+# %%
 
 json_slice = {"Dataset": {
-    "filename": "IsolatedGalaxy/galaxy0030/galaxy0030"},
-    "Field": {"field": "density"},
+    "FileName": "IsolatedGalaxy/galaxy0030/galaxy0030"},
+    "fields": {"field": "density"},
     "Axis": "x"}
 
 json_projection = {"Dataset": {
-    "filename": "IsolatedGalaxy/galaxy0030/galaxy0030"},
-    "Field": {"field": "density"},
-    "Axis": "x", 
-    "CenterPlot": "c",
-    "WeightedField": {"field": "velocity_magnitude"},
-    "AxesUnit": "cm"}
+    "FileName": "IsolatedGalaxy/galaxy0030/galaxy0030"},
+    "fields": {"field": "density"},
+    "Axis": "x",
+    "Center": "max"}
+    # "weight_field": {"field": "velocity_magnitude"},
+    # "axes_unit": "cm"}
     #"DataSource": {"Center": [0.75, 0.5, 0.5], "Radius": 2.0}}
 
 json_phase = {"Dataset": {
-    "filename": "IsolatedGalaxy/galaxy0030/galaxy0030"},
-    "xField": {"field": "density"},
-    "yField": {"field" : "temperature"},
-    "zField": {"field": "velocity_magnitude"},
-    "WeightedField": {"field": "density"},
-    "xBins": 100,
-    "yBins": 100,
-    "Accumulation": False,
-    "Fractional": True,
-    "FigureSize": 8,
-    "FontSize": 16,
-    "Shading": "nearest"}
-
-# %%
+    "FileName": "IsolatedGalaxy/galaxy0030/galaxy0030"},
+    "x_field": {"field": "density"},
+    "y_field": {"field" : "temperature"},
+    "z_fields": {"field": "velocity_magnitude"}}
+    # "weight_field": {"field": "density"},
+    # "x_bins": 100,
+    # "y_bins": 100,
+    # "accumulation": False,
+    # "fractional": True,
+    # "figure_size": 8,
+    # "fontsize": 16,
+    # "shading": "nearest"}
 
 analysis_model = ytModel(Plot = [
     {
         "SlicePlot": json_slice,
-        "ProjectionPlot": json_projection
+        "ProjectionPlot": json_projection,
+        "PhasePlot": json_phase
         }
     ]
 )
-#analysis_model = ytModel(Plot= [json_projection, json_slice])
+
+print("the model:", analysis_model)
+print(type(analysis_model))
+
+# %%
+
+print(show_plots(analysis_model))
+
+
+# %%
+
+live_json = open("pydantic_instance.json")
+live_schema = json.load(live_json)
+live_schema.pop('$schema')
+print(live_schema)
+
+analysis_model = ytModel(Plot = 
+    live_schema['Plot']
+)
+
 
 print("the model:", analysis_model)
 print(type(analysis_model))
@@ -313,16 +369,7 @@ print(type(analysis_model))
 # print(analysis_model.schema_json(indent=2))
 # print()
 
-
 # %%
-
-def show_plots(schema):
-    result = schema._run()
-    print(result)
-    for output in range(len(tuple(result))):
-        print("each output:", result[output])
-        result[output].show()
-
 print(show_plots(analysis_model))
 
 
@@ -341,12 +388,14 @@ with open("pydantic_schema_file.json", "w") as file:
 import yt
 import inspect
 
+yt.ProjectionPlot?
+
 ds = yt.load("IsolatedGalaxy/galaxy0030/galaxy0030")
 sp = ds.sphere([0.5, 0.5, 0.5], 0.1)
 
 method_list = inspect.getmembers(sp, predicate=inspect.getmembers)
  
-print(method_list)
+#print(method_list)
 
 
 # %%
