@@ -51,6 +51,7 @@ class ytBaseModel(BaseModel):
 
          # the list that we'll use to eventually call our function
         the_args = []
+        key_args = {}
         
         # this method actually executes the yt code
 
@@ -127,11 +128,13 @@ class ytBaseModel(BaseModel):
                 the_args.append(arg_value)
             print("the args list:", the_args)
             if funcname == 'load':
-                the_ds.append(func(*the_args))
+                data = func(*the_args)
+                the_ds.append(data)
             print()
             print("saved data:", the_ds)
         except AttributeError:
-            data_args = []
+            key_args = {'ds':the_ds[0]}
+           # data_args = []
            # print("need to instaniate data")
             for name, val in data_object_registry.items():
                 # grab value, which should be a class
@@ -144,15 +147,18 @@ class ytBaseModel(BaseModel):
                         print("the arg value:", con_value)
                         if isinstance(con_value, ytBaseModel) or isinstance(con_value, ytParameter):
                             con_value = con_value._run()
-                        data_args.append(con_value)
-                    data_args.insert(0, the_ds)
-                    print("the function:", func, data_args)
+                        #data_args.append(con_value)
+                    #data_args.insert(0, the_ds)
+                   # print("the function:", func, data_args)
             #print("the function:", func, data_args)
-            the_args.append(data_args)
+                        the_args.append(con_value)
+                        #the_args.append(the_ds._run())
             #return func(ds=the_ds, *the_args)
         print("the function:", func, the_args)
-        return func(*the_args)
-    
+        if key_args is None:
+            return func(*the_args)
+        if key_args is not None:
+            return func(*the_args, **key_args)
 
 class ytParameter(BaseModel):
     _skip_these = ['comments']
