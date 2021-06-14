@@ -45,12 +45,14 @@ class ytBaseModel(BaseModel):
     """
     _arg_mapping: dict = {}  # mapping from internal yt name to schema name
     _yt_operation: Optional[str]
-    the_ds = []
+    # the list to store the data after it has been instaniated
+    _the_ds = []
 
-    def _run(self, the_ds=the_ds):
+    def _run(self, the_ds=_the_ds):
 
          # the list that we'll use to eventually call our function
         the_args = []
+        # the list to store the key word arguments
         key_args = {}
         
         # this method actually executes the yt code
@@ -63,6 +65,8 @@ class ytBaseModel(BaseModel):
         print(self._yt_operation)
         funcname = getattr(self, "_yt_operation", type(self).__name__)
         print("found name:", funcname)
+
+        # if the function is not readily available in yt, move to the except block
         try:
             func = getattr(yt, funcname)
             print(f"pulled func {func}", type(func))
@@ -127,37 +131,36 @@ class ytBaseModel(BaseModel):
 
                 the_args.append(arg_value)
             print("the args list:", the_args)
+            # this saves the data from yt.load, so it can be used to instaniate the data object items
             if funcname == 'load':
                 data = func(*the_args)
                 the_ds.append(data)
             print()
-            print("saved data:", the_ds)
+            print("ds:", the_ds)
         except AttributeError:
+            # add a way to pass keyword agruments to the function
+            # this is mostly to be able to say `ds=the_ds` after the data class has been instaniated for data object items
+
+            print("ds:", the_ds[0])
             key_args = {'ds':the_ds[0]}
-           # data_args = []
-           # print("need to instaniate data")
             for name, val in data_object_registry.items():
                 # grab value, which should be a class
                 if funcname == name:
                     func = val
-                    #print("will return:", name, val)
+
                     for arguments in val._con_args:
                         print("original args:", arguments)
                         con_value = getattr(self, arguments)
                         print("the arg value:", con_value)
                         if isinstance(con_value, ytBaseModel) or isinstance(con_value, ytParameter):
                             con_value = con_value._run()
-                        #data_args.append(con_value)
-                    #data_args.insert(0, the_ds)
-                   # print("the function:", func, data_args)
-            #print("the function:", func, data_args)
                         the_args.append(con_value)
-                        #the_args.append(the_ds._run())
-            #return func(ds=the_ds, *the_args)
         print("the function:", func, the_args)
+
         if key_args is None:
             return func(*the_args)
         if key_args is not None:
+            print("key args:", key_args)
             return func(*the_args, **key_args)
 
 class ytParameter(BaseModel):
@@ -175,7 +178,7 @@ class ytParameter(BaseModel):
 
 class Dataset(ytBaseModel):
     """ 
-    The dataset to load. Must be a string.
+    The dataset to load. Filen name must be a string.
     
     Required fields: Filename 
     """
@@ -198,11 +201,27 @@ class FieldNames(ytParameter):
     comments: Optional[str]
 
 class Sphere(ytBaseModel):
+    """A sphere of points defined by a *center* and a *radius*.
+
+    Args:
+        ytBaseModel ([type]): [description]
+    """
     # found in the 'selection_data_containers.py' 
-    center: List[float]
-    radius: Union[float, Tuple[float, str]]
+    center: List[float] = Field(alias='Center')
+    radius: Union[float, Tuple[float, str]] = Field(alias='Radius')
     _yt_operation: str = "sphere"
 #     _arg_mapping: dict = {'center': 'Center', 'radius': 'Radius'}
+
+class Region(ytBaseModel):
+    center: List[float]
+    left_edge: List[float]
+    right_edge: List[float]
+    _yt_operation: str = "region"
+
+class Slice(ytBaseModel):
+    axis: Union[int, str]
+    coord: float
+    _yt_operation: "slice"
 
 # class ShadingEnum(ytParameter):
 #     shading: Union[str]
@@ -227,7 +246,7 @@ class Sphere(ytBaseModel):
 # look at the data source and selection, objects
 
 class SlicePlot(ytBaseModel):
-    ds: Union[Dataset, Any] = Field(alias='Dataset')
+    ds: Dataset = Field(alias='Dataset')
     fields: FieldNames = Field(alias='FieldNames')
     axis: str = Field(alias='Axis')
     center: Optional[Union[str, List[float]]] = Field(alias='Center')
@@ -240,7 +259,7 @@ class SlicePlot(ytBaseModel):
   
 
 class ProjectionPlot(ytBaseModel):
-    ds: Union[Dataset, Any] = Field(alias='Dataset')
+    ds: Dataset = Field(alias='Dataset')
     fields: FieldNames = Field(alias='FieldNames')
     axis: Union[str, int] = Field(alias='Axis')
     # domain stuff here. Can we simplify? Contains operations stuff too
@@ -260,7 +279,7 @@ class ProjectionPlot(ytBaseModel):
     field_parameters: Optional[dict] = Field(alias='FieldParameters')
     # better name?
     method: Optional[str] = Field(alias='Method')
-    data_source: Optional[Sphere]
+    data_source: Optional[Union[Sphere, Slice]] = Field(alias="DataSource", description="Select a subset of the dataset to visualize from the overall dataset")
     Comments: Optional[str]
     _yt_operation: str = "ProjectionPlot"
     # #_arg_mapping: dict = {'ds': 'Dataset', 'fields': 'Field',
@@ -316,22 +335,11 @@ class ytModel(ytBaseModel):
     def _run(self):
         # for the top level model, we override this. Nested objects will still be recursive!
         output_list = list()
-        # data_att = getattr(self, "Data")
-        # data_container = data_att._run()  
         att = getattr(self, "Plot")
-        # print("full att:", att)
-        # print("what is att:", type(att))
-        # print()
-    
         for p in att:
-            # print("atts:", p)
-            # print("atts type:", type(p))
-            # print("atts dir:", dir(p))
             for attribute in dir(p):
                 if attribute.endswith('Plot'):
                     new_att = getattr(p, attribute)
-                    #print("new att:", new_att)
-                    #print()
                     if new_att is not None:
                         output_list.append(new_att._run())
             return output_list
@@ -346,10 +354,11 @@ json_slice = {"Dataset": {
 
 json_projection = {"Dataset": {
     "FileName": "IsolatedGalaxy/galaxy0030/galaxy0030"},
-    "FieldNames": {"field": "density"},
+    "FieldNames": {"field": "temperature"},
     "Axis": "x",
     "Center": "max",
-    "data_source": {"center": [0.5, 0.5, 0.5], "radius": 0.1}}
+    # "DataSource": {"axis": "x", "coord": 0.5}}
+    "DataSource": {"Center": [0.5, 0.5, 0.5], "Radius": 0.1}}
     # "weight_field": {"field": "velocity_magnitude"},
     # "axes_unit": "cm"}
     #"DataSource": {"Center": [0.75, 0.5, 0.5], "Radius": 2.0}}
@@ -372,7 +381,7 @@ analysis_model = ytModel(Plot = [
     {
         #"SlicePlot": json_slice
         "ProjectionPlot": json_projection,
-        # "PhasePlot": json_phase
+        #"PhasePlot": json_phase
         }
     ]
 )
@@ -465,6 +474,12 @@ for n, obj in sorted(data_object_registry.items()):
 import yt
 
 ds = yt.load("IsolatedGalaxy/galaxy0030/galaxy0030")
-ds.sphere?
+ds.slice?
 
+
+# %%
+import yt
+
+ds = yt.load("IsolatedGalaxy/galaxy0030/galaxy0030")
+ds.sphere?
 # %%

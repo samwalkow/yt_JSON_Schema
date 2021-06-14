@@ -13,3 +13,12 @@
 
 - data ouput idea - turn data points into properties for re-use
 
+April 30th:
+
+- for description purposes, having 'middle' classes to group lower data classes, but how to navigate having no yt operation? 
+
+May 26th:
+
+- use 'middle' class to implement domain context logic?
+- use 'alias generator' to connect with ontology?
+- use a function to capture previous values, and set that as the default factory value to run and grab old value
