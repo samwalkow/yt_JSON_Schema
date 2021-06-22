@@ -2,6 +2,7 @@
 
 #%%
 
+from BaseModelFunctions import ytDataObjectAbstract
 from enum import Enum
 from types import new_class
 from numba.core.decorators import jit
@@ -30,7 +31,7 @@ def show_plots(schema):
         result[output].show()
 
 #%%
-#@jitclass
+
 class ytBaseModel(BaseModel):
     """A class to connect attributes and their values to yt operations and their keywork arguements. 
 
@@ -46,125 +47,96 @@ class ytBaseModel(BaseModel):
     _arg_mapping: dict = {}  # mapping from internal yt name to schema name
     _yt_operation: Optional[str]
     # the list to store the data after it has been instaniated
-    _the_ds = []
-
-    def _run(self, the_ds=_the_ds):
+    _data_source = {}
+    _main_args = []
+    print("arg attribute:", _main_args)
+    
+    def _run(self):
 
          # the list that we'll use to eventually call our function
         the_args = []
-        # the list to store the key word arguments
-        key_args = {}
-        
         # this method actually executes the yt code
-
         # first make sure yt is imported and then get our function handle. This assumes
         # that our class name exists in yt's top level api.
         import yt
-        from yt.data_objects.data_containers import        data_object_registry
 
         print(self._yt_operation)
         funcname = getattr(self, "_yt_operation", type(self).__name__)
         print("found name:", funcname)
 
         # if the function is not readily available in yt, move to the except block
-        try:
-            func = getattr(yt, funcname)
-            print(f"pulled func {func}", type(func))
-                        
+        # try:
+        func = getattr(yt, funcname)
+        print(f"pulled func {func}", type(func))
+                    
 
-            # now we get the arguments for the function:
-            # func_spec.args, which lists the named arguments and keyword arguments.
-            # ignoring vargs and kw-only args for now...
-            # see https://docs.python.org/3/library/inspect.html#inspect.getfullargspec
-            func_spec = getfullargspec(func)
-            print("spec", func_spec)
+        # now we get the arguments for the function:
+        # func_spec.args, which lists the named arguments and keyword arguments.
+        # ignoring vargs and kw-only args for now...
+        # see https://docs.python.org/3/library/inspect.html#inspect.getfullargspec
+        func_spec = getfullargspec(func)
+        print("spec", func_spec)
 
-            # the argument position number at which we have default values (a little hacky, should
-            # be a better way to do this, and not sure how to scale it to include *args and **kwargs)
-            n_args = len(func_spec.args)  # number of arguments
-            print("number of args:", n_args)
-            if func_spec.defaults is None:
-                # no default args, make sure we never get there...
-                named_kw_start_at = n_args + 1
-            else:
-                # the position at which named keyword args start
-                named_kw_start_at = n_args - len(func_spec.defaults)
-            print(f"keywords start at {named_kw_start_at}")
+        # the argument position number at which we have default values (a little hacky, should
+        # be a better way to do this, and not sure how to scale it to include *args and **kwargs)
+        n_args = len(func_spec.args)  # number of arguments
+        print("number of args:", n_args)
+        if func_spec.defaults is None:
+            # no default args, make sure we never get there...
+            named_kw_start_at = n_args + 1
+            print(named_kw_start_at)
+        else:
+            # the position at which named keyword args start
+            named_kw_start_at = n_args - len(func_spec.defaults)
+        print(f"keywords start at {named_kw_start_at}")
 
-            # loop over the call signature arguments and pull out values from our pydantic class .
-            # this is recursive! will call _run() if a given argument value is also a ytBaseModel.
-            for arg_i, arg in enumerate(func_spec.args):
-                # check if we've remapped the yt internal argument name for the schema
-                if arg == 'self':
-                    continue
-                # if arg in self._arg_mapping:
-                    # arg = self._arg_mapping[arg]
+        # loop over the call signature arguments and pull out values from our pydantic class .
+        # this is recursive! will call _run() if a given argument value is also a ytBaseModel.
+        for arg_i, arg in enumerate(func_spec.args):
+            # check if we've remapped the yt internal argument name for the schema
+            if arg == 'self':
+                continue
 
-                # get the value for this argument. If it's not there, attempt to set default values
-                # for arguments needed for yt but not exposed in our pydantic class
-                print("the arguemnt:", arg)
-                try:
-                    arg_value = getattr(self, arg)
-                    print("the arg value:", arg_value)
-                    if arg_value == None:
-                        default_index = arg_i - named_kw_start_at
-                        arg_value = func_spec.defaults[default_index]
-                        print('defaults:', default_index, arg_value)
-                except AttributeError:
-                    if arg_i >= named_kw_start_at:
-                        # we are in the named keyword arguments, grab the default
-                        # the func_spec.defaults tuple 0 index is the first named
-                        # argument, so need to offset the arg_i counter
-                        default_index = arg_i - named_kw_start_at
-                        arg_value = func_spec.defaults[default_index]
-                        print('defaults:', default_index, arg_value)
-                    else:
-                        raise AttributeError
+            # get the value for this argument. If it's not there, attempt to set default values
+            # for arguments needed for yt but not exposed in our pydantic class
+            print("the arguemnt:", arg)
+            try:
+                arg_value = getattr(self, arg)
+                print("the arg value:", arg_value)
+                if arg_value == None:
+                    default_index = arg_i - named_kw_start_at
+                    arg_value = func_spec.defaults[default_index]
+                    print('defaults:', default_index, arg_value)
+            except AttributeError:
+                if arg_i >= named_kw_start_at:
+                    # we are in the named keyword arguments, grab the default
+                    # the func_spec.defaults tuple 0 index is the first named
+                    # argument, so need to offset the arg_i counter
+                    default_index = arg_i - named_kw_start_at
+                    arg_value = func_spec.defaults[default_index]
+                    print('defaults:', default_index, arg_value)
+                else:
+                    raise AttributeError
 
-                # check if this argument is itself a ytBaseModel for which we need to run
-                # this should make this a fully recursive function?
-                # if hasattr(arg_value,'_run'):
-                if isinstance(arg_value, ytBaseModel) or isinstance(arg_value, ytParameter):
-                    print(
-                        f"{arg_value} is a {type(arg_value)}, calling {arg_value}._run() now...")
-                    arg_value = arg_value._run()
+            # check if this argument is itself a ytBaseModel for which we need to run
+            # this should make this a fully recursive function?
+            if isinstance(arg_value, ytBaseModel) or isinstance(arg_value, ytParameter):
+                print(
+                    f"{arg_value} is a {type(arg_value)}, calling {arg_value}._run() now...")
+                arg_value = arg_value._run()
 
-                the_args.append(arg_value)
+            the_args.append(arg_value)
             print("the args list:", the_args)
-            # this saves the data from yt.load, so it can be used to instaniate the data object items
-            if funcname == 'load':
-                data = func(*the_args)
-                the_ds.append(data)
-            print()
-            print("ds:", the_ds)
-        except AttributeError:
-            # add a way to pass keyword agruments to the function
-            # this is mostly to be able to say `ds=the_ds` after the data class has been instaniated for data object items
+        self._main_args.append(the_args)
 
-            print("ds:", the_ds[0])
-            key_args = {'ds':the_ds[0]}
-            for name, val in data_object_registry.items():
-                # grab value, which should be a class
-                if funcname == name:
-                    func = val
 
-                    for arguments in val._con_args:
-                        print("original args:", arguments)
-                        con_value = getattr(self, arguments)
-                        print("the arg value:", con_value)
-                        if isinstance(con_value, ytBaseModel) or isinstance(con_value, ytParameter):
-                            con_value = con_value._run()
-                        the_args.append(con_value)
-        print("the function:", func, the_args)
-
-        if key_args is None:
-            return func(*the_args)
-        if key_args is not None:
-            print("key args:", key_args)
-            return func(*the_args, **key_args)
+        # this saves the data from yt.load, so it can be used to instaniate the data object items
+        if funcname == 'load':
+            self._data_source[funcname] = func(*the_args)
+        return func(*the_args)
 
 class ytParameter(BaseModel):
-    _skip_these = ['comments']
+    _skip_these = ['comments', 'data_source']
 
     def _run(self):
         p = [getattr(self, key) for key in self.schema()[
@@ -174,6 +146,53 @@ class ytParameter(BaseModel):
             raise ValueError(
                 "whoops. ytParameter instances can only have single values")
         return p[0]
+
+# %%
+
+class ytDataObjectAbstract(ytBaseModel):
+    # abstract class for all the data selectors to inherit from
+
+    def _run(self):
+        from yt.data_objects.data_containers import data_object_registry
+
+        the_args = []
+        funcname = getattr(self, "_yt_operation", type(self).__name__)
+        print("function name:", funcname)
+
+        val = data_object_registry[funcname]
+        
+        # get the function from the data object registry
+        val = data_object_registry[funcname]
+        print("function:", val)
+             
+        # iterate through the arguments for the found data object
+        for arguments in val._con_args:
+            print("the args:", arguments)
+            con_value = getattr(self, arguments)
+            print(con_value)
+
+            # check that the argument is the correct instance
+            if isinstance(con_value, ytDataObjectAbstract):
+                # call the _run() function on the agrument
+                con_value = con_value._run()
+
+            the_args.append(con_value)
+
+        func_spec = getfullargspec(val)
+        print('full spec:', func_spec)
+        spec_value = getattr(self, 'data_source')
+        if isinstance(spec_value, ytDataObjectAbstract) or isinstance(spec_value, ytBaseModel) or isinstance(spec_value, ytParameter):
+            spec_value._run()
+        ds = spec_value
+  
+        print("the argument list:", the_args)
+        # if there is a dataset sitting in _data_source, add it to the args and call as a keyword argument
+        if len(self._data_source) > 0:
+            ds = list(self._data_source.values())[0]
+            return val(*the_args, ds=ds)
+        else:
+            return val(*the_args, ds=ds)
+
 
 
 class Dataset(ytBaseModel):
@@ -200,7 +219,7 @@ class FieldNames(ytParameter):
     _unit: Optional[str]
     comments: Optional[str]
 
-class Sphere(ytBaseModel):
+class Sphere(ytDataObjectAbstract):
     """A sphere of points defined by a *center* and a *radius*.
 
     Args:
@@ -209,41 +228,19 @@ class Sphere(ytBaseModel):
     # found in the 'selection_data_containers.py' 
     center: List[float] = Field(alias='Center')
     radius: Union[float, Tuple[float, str]] = Field(alias='Radius')
+    data_source: Optional[Dataset] = Field(alias="Dataset")
     _yt_operation: str = "sphere"
-#     _arg_mapping: dict = {'center': 'Center', 'radius': 'Radius'}
 
-class Region(ytBaseModel):
+class Region(ytDataObjectAbstract):
     center: List[float]
     left_edge: List[float]
     right_edge: List[float]
     _yt_operation: str = "region"
 
-class Slice(ytBaseModel):
+class Slice(ytDataObjectAbstract):
     axis: Union[int, str]
     coord: float
     _yt_operation: "slice"
-
-# class ShadingEnum(ytParameter):
-#     shading: Union[str]
-
-# class Average(BaseModel):
-#     average_field: Fields
-#     comments: Optional[str]
-#     _grammar: str = "reduction"
-
-# class Sum(BaseModel):
-#     sum_field: Fields
-#     comments: Optional[str]
-#     _grammar: str = "reduction"
-
-# class Operations(BaseModel):
-#     operation: Union[Sum, Average]
-
-# class DataSource(BaseModel):
-#     dataset: Dataset
-#     data_selection: Union[Fields, Operations]
-
-# look at the data source and selection, objects
 
 class SlicePlot(ytBaseModel):
     ds: Dataset = Field(alias='Dataset')
@@ -259,7 +256,7 @@ class SlicePlot(ytBaseModel):
   
 
 class ProjectionPlot(ytBaseModel):
-    ds: Dataset = Field(alias='Dataset')
+    ds: Optional[Dataset] = Field(alias='Dataset')
     fields: FieldNames = Field(alias='FieldNames')
     axis: Union[str, int] = Field(alias='Axis')
     # domain stuff here. Can we simplify? Contains operations stuff too
@@ -318,6 +315,8 @@ class Visualizations(BaseModel):
     PhasePlot: Optional[PhasePlot]
     #_yt_operation: str = None
 
+
+
 # %%
 
 class ytModel(ytBaseModel):
@@ -346,11 +345,11 @@ class ytModel(ytBaseModel):
 
 # %%
 
-json_slice = {"Dataset": {
-    "FileName": "IsolatedGalaxy/galaxy0030/galaxy0030"},
-    "FieldNames": {"field": "density"},
-    "Axis": "x",
-    "data_source": {"center":[0.5, 0.5, 0.5], "radius": 0.1}}
+# json_slice = {"Dataset": {
+#     "FileName": "IsolatedGalaxy/galaxy0030/galaxy0030"},
+#     "FieldNames": {"field": "density"},
+#     "Axis": "x",
+#     "data_source": {"center":[0.5, 0.5, 0.5], "radius": 0.1}}
 
 json_projection = {"Dataset": {
     "FileName": "IsolatedGalaxy/galaxy0030/galaxy0030"},
@@ -363,11 +362,11 @@ json_projection = {"Dataset": {
     # "axes_unit": "cm"}
     #"DataSource": {"Center": [0.75, 0.5, 0.5], "Radius": 2.0}}
 
-json_phase = {"Dataset": {
-    "FileName": "IsolatedGalaxy/galaxy0030/galaxy0030"},
-    "xField": {"field": "density"},
-    "yField": {"field" : "temperature"},
-    "zField(s)": {"field": "velocity_magnitude"}}
+# json_phase = {"Dataset": {
+#     "FileName": "IsolatedGalaxy/galaxy0030/galaxy0030"},
+#     "xField": {"field": "density"},
+#     "yField": {"field" : "temperature"},
+#     "zField(s)": {"field": "velocity_magnitude"}}
     # "weight_field": {"field": "density"},
     # "x_bins": 100,
     # "y_bins": 100,
@@ -452,8 +451,10 @@ def extract_description(docstring):
     return tw.fill(" ".join([_.strip() for _ in description.splitlines()]))
 for n, obj in sorted(data_object_registry.items()):
     print("#### {} {{#sec:dobj-{}}}".format(n.replace("_", " ").capitalize(), n))
+    obj._con_args?
     print("\n*Arguments*: \n")
     for arg in obj._con_args:
+        
         aname = arg.replace("_"," ").capitalize()
         print(" * {}".format(replacement_dict.get(aname, aname)))
     print("\n{}\n".format(extract_description(obj.__doc__).strip()))
@@ -474,12 +475,17 @@ for n, obj in sorted(data_object_registry.items()):
 import yt
 
 ds = yt.load("IsolatedGalaxy/galaxy0030/galaxy0030")
-ds.slice?
-
+slc = yt.SlicePlot(ds=ds, fields='density', axis='x')
+slc.save?
 
 # %%
 import yt
 
 ds = yt.load("IsolatedGalaxy/galaxy0030/galaxy0030")
 ds.sphere?
+# %%
+
+import matplotlib as plt
+
+plt.savefig?
 # %%
