@@ -48,8 +48,7 @@ class ytBaseModel(BaseModel):
     _yt_operation: Optional[str]
     # the list to store the data after it has been instaniated
     _data_source = {}
-    _main_args = []
-    print("arg attribute:", _main_args)
+    
     
     def _run(self):
 
@@ -103,7 +102,7 @@ class ytBaseModel(BaseModel):
             try:
                 arg_value = getattr(self, arg)
                 print("the arg value:", arg_value)
-                if arg_value == None:
+                if arg_value == None and arg !='ds':
                     default_index = arg_i - named_kw_start_at
                     arg_value = func_spec.defaults[default_index]
                     print('defaults:', default_index, arg_value)
@@ -127,8 +126,6 @@ class ytBaseModel(BaseModel):
 
             the_args.append(arg_value)
             print("the args list:", the_args)
-        self._main_args.append(the_args)
-
 
         # this saves the data from yt.load, so it can be used to instaniate the data object items
         if funcname == 'load':
@@ -183,14 +180,14 @@ class ytDataObjectAbstract(ytBaseModel):
         spec_value = getattr(self, 'data_source')
         if isinstance(spec_value, ytDataObjectAbstract) or isinstance(spec_value, ytBaseModel) or isinstance(spec_value, ytParameter):
             spec_value._run()
-        ds = spec_value
+
+        if spec_value == "load":
+            self._data_source[funcname] = spec_value
   
         print("the argument list:", the_args)
         # if there is a dataset sitting in _data_source, add it to the args and call as a keyword argument
         if len(self._data_source) > 0:
             ds = list(self._data_source.values())[0]
-            return val(*the_args, ds=ds)
-        else:
             return val(*the_args, ds=ds)
 
 
@@ -323,7 +320,7 @@ class ytModel(ytBaseModel):
     '''
     An example for a yt analysis schema using Pydantic
     '''
-    #Plot: List[Union[ProjectionPlot, PhasePlot, SlicePlot]]
+    
     #Data: Dataset
     Plot: List[Visualizations]
 
@@ -475,17 +472,36 @@ for n, obj in sorted(data_object_registry.items()):
 import yt
 
 ds = yt.load("IsolatedGalaxy/galaxy0030/galaxy0030")
-slc = yt.SlicePlot(ds=ds, fields='density', axis='x')
-slc.save?
+sphere = ds.sphere(center=[0.5, 0.5, 0.5,], radius=0.1)
+print(sphere)
+slc = yt.ProjectionPlot(fields='density', axis='x', data_source=sphere)
+print(slc)
 
 # %%
 import yt
 
 ds = yt.load("IsolatedGalaxy/galaxy0030/galaxy0030")
-ds.sphere?
+sphere = ds.sphere(center=[0.5, 0.5, 0.5,], radius=0.1)
+slc = yt.ProjectionPlot(ds=ds, fields='density', axis='x', data_source=sphere)
+slc
+
 # %%
 
 import matplotlib as plt
 
 plt.savefig?
+# %%
+
+class StoreTest(object):
+    dict_store = {} 
+class StoreTest2(StoreTest):
+    def dumb_method(self):
+        pass
+st = StoreTest()
+st2 = StoreTest2()
+print(st.dict_store)
+print(st2.dict_store)
+st2.dict_store['hello'] = 'hi'
+print(st.dict_store)
+print(st2.dict_store)
 # %%

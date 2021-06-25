@@ -1,32 +1,20 @@
 {
-  "$schema": "./pydantic_schema_file.json",
-  "Plot": [
-    {
-      "Data": {
-        "filename": "Sam.txt", "comments": "My data is here"
-      },
-      "PlotFields":{
-        "operation":{
-          "sum_field": {
-            "field": "density",
-            "unit": "kpc"
-          }
-        }
-      },
-      "AxisPlot": [
-        {
-        "axis": "x"
-        }
-      ],
-      "CenterPlot": {
-        "center": "z"
-      },
-      "WidthPlot": [
-        {
-          "width": "1"
-          }
-        ],
-      "Annotation": true
-  }
-]
+    "$schema": "./pydantic_schema_file.json",
+    "Plot": [
+       {
+           "ProjectionPlot": {
+               "FieldNames": {
+                   "field": "density"
+               },
+               "Axis":"x",
+               "DataSource":{
+                   "Center": [0.5, 0.5, 0.5],
+                   "Radius": 0.1,
+                   "Dataset": {
+                     "FileName": "IsolatedGalaxy/galaxy0030/galaxy0030"
+               }
+            }
+           }
+       }
+    ]
 }

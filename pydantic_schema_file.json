@@ -17,11 +17,12 @@
   "definitions": {
     "Dataset": {
       "title": "Dataset",
-      "description": "The dataset model to load and that will be drawn from for other classes. Filename is the only required field. ",
+      "description": "The dataset to load. Filen name must be a string.\n\nRequired fields: Filename ",
       "type": "object",
       "properties": {
         "FileName": {
           "title": "Filename",
+          "description": "Must be string containing the (path to the file and the) file name",
           "type": "string"
         },
         "name": {
@@ -56,20 +57,55 @@
         "field"
       ]
     },
+    "Sphere": {
+      "title": "Sphere",
+      "description": "A sphere of points defined by a *center* and a *radius*.\n\nArgs:\n    ytBaseModel ([type]): [description]",
+      "type": "object",
+      "properties": {
+        "Center": {
+          "title": "Center",
+          "type": "array",
+          "items": {
+            "type": "number"
+          }
+        },
+        "Radius": {
+          "title": "Radius",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "array",
+              "items": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "string"
+                }
+              ]
+            }
+          ]
+        },
+        "Dataset": {
+          "$ref": "#/definitions/Dataset"
+        }
+      },
+      "required": [
+        "Center",
+        "Radius"
+      ]
+    },
     "SlicePlot": {
       "title": "SlicePlot",
+      "description": "A class to connect attributes and their values to yt operations and their keywork arguements. \n\nArgs:\n    BaseModel ([type]): A pydantic basemodel in the form of a json schema\n\nRaises:\n    AttributeError: [description]\n\nReturns:\n    [list]: A list of yt classes to be run and then displayed",
       "type": "object",
       "properties": {
         "Dataset": {
-          "title": "Dataset",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/Dataset"
-            },
-            {}
-          ]
+          "$ref": "#/definitions/Dataset"
         },
-        "fields": {
+        "FieldNames": {
           "$ref": "#/definitions/FieldNames"
         },
         "Axis": {
@@ -90,7 +126,7 @@
             }
           ]
         },
-        "width": {
+        "Width": {
           "title": "Width",
           "anyOf": [
             {
@@ -112,6 +148,9 @@
             }
           ]
         },
+        "data_source": {
+          "$ref": "#/definitions/Sphere"
+        },
         "Comments": {
           "title": "Comments",
           "type": "string"
@@ -119,24 +158,45 @@
       },
       "required": [
         "Dataset",
-        "fields",
+        "FieldNames",
         "Axis"
+      ]
+    },
+    "Slice": {
+      "title": "Slice",
+      "description": "A class to connect attributes and their values to yt operations and their keywork arguements. \n\nArgs:\n    BaseModel ([type]): A pydantic basemodel in the form of a json schema\n\nRaises:\n    AttributeError: [description]\n\nReturns:\n    [list]: A list of yt classes to be run and then displayed",
+      "type": "object",
+      "properties": {
+        "axis": {
+          "title": "Axis",
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "coord": {
+          "title": "Coord",
+          "type": "number"
+        }
+      },
+      "required": [
+        "axis",
+        "coord"
       ]
     },
     "ProjectionPlot": {
       "title": "ProjectionPlot",
+      "description": "A class to connect attributes and their values to yt operations and their keywork arguements. \n\nArgs:\n    BaseModel ([type]): A pydantic basemodel in the form of a json schema\n\nRaises:\n    AttributeError: [description]\n\nReturns:\n    [list]: A list of yt classes to be run and then displayed",
       "type": "object",
       "properties": {
         "Dataset": {
-          "title": "Dataset",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/Dataset"
-            },
-            {}
-          ]
+          "$ref": "#/definitions/Dataset"
         },
-        "fields": {
+        "FieldNames": {
           "$ref": "#/definitions/FieldNames"
         },
         "Axis": {
@@ -154,7 +214,7 @@
           "title": "Center",
           "type": "string"
         },
-        "width": {
+        "Width": {
           "title": "Width",
           "anyOf": [
             {
@@ -166,18 +226,18 @@
             }
           ]
         },
-        "axes_unit": {
-          "title": "Axes Unit",
+        "AxesUnit": {
+          "title": "Axesunit",
           "type": "string"
         },
-        "weight_field": {
+        "WeightFieldName": {
           "$ref": "#/definitions/FieldNames"
         },
-        "max_level": {
-          "title": "Max Level",
+        "MaxLevel": {
+          "title": "Maxlevel",
           "type": "integer"
         },
-        "origin": {
+        "Origin": {
           "title": "Origin",
           "anyOf": [
             {
@@ -191,21 +251,33 @@
             }
           ]
         },
-        "right_handed": {
-          "title": "Right Handed",
+        "RightHanded": {
+          "title": "Righthanded",
           "type": "boolean"
         },
-        "fontsize": {
+        "FontSize": {
           "title": "Fontsize",
           "type": "integer"
         },
-        "field_parameters": {
-          "title": "Field Parameters",
+        "FieldParameters": {
+          "title": "Fieldparameters",
           "type": "object"
         },
-        "method": {
+        "Method": {
           "title": "Method",
           "type": "string"
+        },
+        "DataSource": {
+          "title": "Datasource",
+          "description": "Select a subset of the dataset to visualize from the overall dataset",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Sphere"
+            },
+            {
+              "$ref": "#/definitions/Slice"
+            }
+          ]
         },
         "Comments": {
           "title": "Comments",
@@ -213,13 +285,13 @@
         }
       },
       "required": [
-        "Dataset",
-        "fields",
+        "FieldNames",
         "Axis"
       ]
     },
     "PhasePlot": {
       "title": "PhasePlot",
+      "description": "A class to connect attributes and their values to yt operations and their keywork arguements. \n\nArgs:\n    BaseModel ([type]): A pydantic basemodel in the form of a json schema\n\nRaises:\n    AttributeError: [description]\n\nReturns:\n    [list]: A list of yt classes to be run and then displayed",
       "type": "object",
       "properties": {
         "Dataset": {
@@ -231,14 +303,14 @@
             {}
           ]
         },
-        "x_field": {
+        "xField": {
           "$ref": "#/definitions/FieldNames"
         },
-        "y_field": {
+        "yField": {
           "$ref": "#/definitions/FieldNames"
         },
-        "z_fields": {
-          "title": "Z Fields",
+        "zField(s)": {
+          "title": "Zfield(S)",
           "anyOf": [
             {
               "$ref": "#/definitions/FieldNames"
@@ -251,18 +323,18 @@
             }
           ]
         },
-        "weight_field": {
+        "WegihtFieldName": {
           "$ref": "#/definitions/FieldNames"
         },
-        "x_bins": {
-          "title": "X Bins",
+        "xBins": {
+          "title": "Xbins",
           "type": "integer"
         },
-        "y_bins": {
-          "title": "Y Bins",
+        "yBins": {
+          "title": "Ybins",
           "type": "integer"
         },
-        "accumulation": {
+        "Accumulation": {
           "title": "Accumulation",
           "anyOf": [
             {
@@ -276,19 +348,19 @@
             }
           ]
         },
-        "fractional": {
+        "Fractional": {
           "title": "Fractional",
           "type": "boolean"
         },
-        "figure_size": {
-          "title": "Figure Size",
+        "FigureSize": {
+          "title": "Figuresize",
           "type": "integer"
         },
-        "fontsize": {
+        "FontSize": {
           "title": "Fontsize",
           "type": "integer"
         },
-        "shading": {
+        "Shading": {
           "title": "Shading",
           "type": "string"
         },
@@ -299,9 +371,9 @@
       },
       "required": [
         "Dataset",
-        "x_field",
-        "y_field",
-        "z_fields"
+        "xField",
+        "yField",
+        "zField(s)"
       ]
     },
     "Visualizations": {
